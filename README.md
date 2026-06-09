@@ -8,7 +8,7 @@ A minimal Firefox startpage with an arch linux terminal aesthetic. Single HTML f
 
 ## install
 
-Save `homepage.html` anywhere on your disk, then point Firefox at it:
+Save `homepage.html` anywhere on your disk, then change Firefox settings:
 
 1. Open `about:preferences#home` in the address bar
 2. Under **New Windows and Tabs** → **Homepage and new windows**, select **Custom URLs**
@@ -18,7 +18,7 @@ Done.
 
 ## configuration
 
-All customization lives in the `CONFIG` block at the top of the `<script>` tag — no build step, no separate config file.
+All customization is in the `CONFIG` block at the top of the `<script>` tag.
 
 ```js
 const CONFIG = {
