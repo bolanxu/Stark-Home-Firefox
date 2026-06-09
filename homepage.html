@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0e1117; --bg2: #161b22; --bg3: #1c2330;
+    --border: #2a3340; --text: #cdd6f4; --muted: #6c7a8f; --subtle: #3d4c5e;
+    --blue: #89b4fa; --green: #a6e3a1; --yellow: #f9e2af;
+    --mauve: #cba6f7; --font: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; }
+  body {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 2rem; gap: 2.5rem;
+    background-image: linear-gradient(rgba(137,180,250,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(137,180,250,0.015) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .top { display: flex; gap: 4rem; align-items: flex-start; }
+  .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.3rem; }
+  .clock { font-size: 56px; font-weight: 300; color: var(--text); letter-spacing: -2px; line-height: 1; }
+  .date { font-size: 22px; font-weight: 300; color: var(--blue); letter-spacing: -0.5px; line-height: 1; }
+  .meta { font-size: 11px; color: var(--muted); margin-top: 0.5rem; }
+  .meta .user { color: var(--green); } .meta .host { color: var(--blue); } .meta .sep { color: var(--subtle); }
+  .search-wrap { width: 620px; }
+  .prompt-line { font-size: 11px; color: var(--muted); margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+  .p-branch { color: var(--mauve); } .p-user { color: var(--green); } .p-host { color: var(--blue); }
+  .p-path { color: var(--yellow); } .p-sym { color: var(--subtle); }
+  .search-box {
+    display: flex; align-items: center; background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 0 14px; gap: 10px; transition: border-color 0.15s;
+  }
+  .search-box:focus-within { border-color: var(--blue); box-shadow: 0 0 0 1px rgba(137,180,250,0.12); }
+  .cursor-icon { color: var(--green); font-size: 13px; user-select: none; flex-shrink: 0; }
+  .search-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    font-family: var(--font); font-size: 13px; color: var(--text); padding: 13px 0; caret-color: var(--green);
+  }
+  .search-input::placeholder { color: var(--subtle); }
+  .search-hint { font-size: 10px; color: var(--subtle); flex-shrink: 0; }
+  .links-section { width: 620px; display: flex; flex-direction: column; gap: 1.6rem; }
+  .cat-label {
+    font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.14em;
+    margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+  }
+  .cat-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .link-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .link-item {
+    display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 3px;
+    text-decoration: none; color: var(--text); font-family: var(--font); font-size: 12px;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+  }
+  .link-item:hover { background: var(--bg3); border-color: var(--subtle); color: var(--blue); }
+  .link-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .footer { font-size: 10px; color: var(--subtle); letter-spacing: 0.06em; display: flex; gap: 2rem; }
+  .footer span { display: flex; align-items: center; gap: 5px; }
+  .footer .ok { color: var(--green); } .footer .val { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="stat-block">
+    <div class="stat-label">local time</div>
+    <div class="clock" id="clock">00:00</div>
+    <div class="meta">
+      <span class="sep">-- </span>
+      <span class="user" id="cfg-user"></span><span class="sep">@</span><span class="host" id="cfg-host"></span>
+      <span class="sep" id="greet-text"> -- good morning</span>
+    </div>
+  </div>
+  <div class="stat-block" style="padding-top:4px">
+    <div class="stat-label">date</div>
+    <div class="date" id="dateline">...</div>
+    <div class="meta" style="margin-top:0.5rem">
+      <span class="sep">uptime </span><span class="user" id="uptime-val">—</span>
+    </div>
+  </div>
+</div>
+
+<div class="search-wrap">
+  <div class="prompt-line">
+    <span class="p-branch" id="cfg-branch"></span>
+    <span class="p-sym">·</span>
+    <span class="p-user" id="cfg-user2"></span><span class="p-sym">@</span><span class="p-host" id="cfg-host2"></span>
+    <span class="p-sym">·</span>
+    <span class="p-path" id="cfg-path"></span>
+    <span class="p-sym">❯</span>
+  </div>
+  <form class="search-box" id="searchForm">
+    <span class="cursor-icon">❯</span>
+    <input class="search-input" type="text" id="searchInput"
+      placeholder="web-search --query '...'" autocomplete="off" autofocus>
+    <span class="search-hint" id="engineLabel">google</span>
+  </form>
+</div>
+
+<div class="links-section" id="links"></div>
+
+<div class="footer" id="footer"></div>
+
+<script>
+/* =========================================================
+   CONFIG — edit everything in this block
+   ========================================================= */
+const CONFIG = {
+
+  // --- identity ---
+  user:   "bolan",       // shown in prompt and greeting
+  host:   "xutopia",     // shown in prompt and footer
+  branch: "main",      // git branch shown in prompt (the  is nerd font; swap for "git:main" if no nerd font)
+  path:   "~/",          // path shown in prompt
+
+  // --- footer sysinfo ---
+  kernel: "linux 6.17.0-35",
+  wm:     "openbox",
+  distro: "lubuntu",
+
+  // --- default search engine ---
+  // options: "google" | "ddg" | "yt" | "gh" | "aw" | "mdn"
+  defaultEngine: "google",
+
+  // --- bang shortcuts (type !xx before your query) ---
+  // format: "!key": { name, url, param }
+  bangs: {
+    "!g":   { name: "google",   url: "https://www.google.com/search",             param: "q" },
+    "!d":   { name: "ddg",      url: "https://duckduckgo.com/",                    param: "q" },
+    "!yt":  { name: "youtube",  url: "https://www.youtube.com/results",            param: "search_query" },
+    "!gh":  { name: "github",   url: "https://github.com/search",                  param: "q" },
+    "!aw":  { name: "archwiki", url: "https://wiki.archlinux.org/index.php",       param: "search" },
+    "!mdn": { name: "mdn",      url: "https://developer.mozilla.org/en-US/search", param: "q" },
+    // add more:
+    // "!np": { name: "nixpkgs", url: "https://search.nixos.org/packages", param: "query" },
+  },
+
+  // --- link categories ---
+  // each category has a name, accent color (hex), and list of { label, url }
+  links: [
+    {
+      cat: "dev",
+      color: "#89b4fa",
+      items: [
+        { label: "github",       url: "https://github.com/bolanxu" },
+        { label: "hackaday",     url: "https://hackaday.io/bolanxu" },
+        { label: "mdn",          url: "https://developer.mozilla.org" },
+        { label: "crates.io",    url: "https://crates.io" },
+        { label: "esp-idf docs", url: "https://docs.espressif.com" },
+      ]
+    },
+    /*
+    {
+      cat: "arch",
+      color: "#cba6f7",
+      items: [
+        { label: "aur",      url: "https://aur.archlinux.org" },
+        { label: "archwiki", url: "https://wiki.archlinux.org" },
+        { label: "packages", url: "https://archlinux.org/packages" },
+        { label: "forums",   url: "https://bbs.archlinux.org" },
+      ]
+    },
+    */
+    {
+      cat: "media",
+      color: "#a6e3a1",
+      items: [
+        { label: "youtube",    url: "https://youtube.com" },
+        { label: "hackernews", url: "https://news.ycombinator.com" },
+        { label: "linkedin",  url: "https://www.linkedin.com/" },
+        { label: "reddit",     url: "https://reddit.com" },
+      ]
+    },
+    {
+      cat: "tools",
+      color: "#f9e2af",
+      items: [
+        { label: "excalidraw", url: "https://excalidraw.com" },
+        { label: "godbolt",    url: "https://godbolt.org" },
+        { label: "regex101",   url: "https://regex101.com" },
+        { label: "wakatime",   url: "https://wakatime.com" },
+      ]
+    },
+    // add more categories:
+    // {
+    //   cat: "school",
+    //   color: "#f38ba8",
+    //   items: [
+    //     { label: "canvas", url: "https://canvas.instructure.com" },
+    //   ]
+    // },
+  ],
+
+   // --- theme overrides (optional) ---
+   // uncomment and change any CSS variable to retheme
+   theme: {
+     "--bg":     "#1d2021",   // gruvbox dark
+     "--bg2":    "#282828",
+     "--bg3":    "#32302f",
+     "--border": "#3c3836",
+     "--text":   "#ebdbb2",
+     "--muted":  "#928374",
+     "--subtle": "#504945",
+     "--blue":   "#83a598",
+     "--green":  "#b8bb26",
+     "--yellow": "#fabd2f",
+     "--mauve":  "#d3869b",
+   },
+
+};
+/* =========================================================
+   END CONFIG — don't touch below unless you know what you're doing
+   ========================================================= */
+
+
+// apply theme overrides
+if (CONFIG.theme) {
+  const root = document.documentElement;
+  Object.entries(CONFIG.theme).forEach(([k, v]) => root.style.setProperty(k, v));
+}
+
+// populate identity
+document.getElementById('cfg-user').textContent   = CONFIG.user;
+document.getElementById('cfg-host').textContent   = CONFIG.host;
+document.getElementById('cfg-user2').textContent  = CONFIG.user;
+document.getElementById('cfg-host2').textContent  = CONFIG.host;
+document.getElementById('cfg-branch').textContent = CONFIG.branch;
+document.getElementById('cfg-path').textContent   = CONFIG.path;
+
+// footer
+const footerItems = [
+  { ok: '✓', val: CONFIG.distro },
+  { ok: 'kernel', val: CONFIG.kernel },
+  { ok: 'wm', val: CONFIG.wm },
+  { ok: 'host', val: CONFIG.host },
+];
+const footer = document.getElementById('footer');
+footerItems.forEach(item => {
+  const span = document.createElement('span');
+  span.innerHTML = `<span class="ok">${item.ok}</span> <span class="val">${item.val}</span>`;
+  footer.appendChild(span);
+});
+
+// clock / date
+function tick() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clock').textContent = h + ':' + m;
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('dateline').textContent =
+    days[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate();
+  const hr = now.getHours();
+  const greet = hr < 5 ? 'late night' : hr < 12 ? 'good morning' : hr < 17 ? 'good afternoon' : hr < 21 ? 'good evening' : 'good night';
+  document.getElementById('greet-text').textContent = ' -- ' + greet;
+  const s = Math.floor(performance.now() / 1000);
+  const mn = Math.floor(s / 60);
+  const hh = Math.floor(mn / 60);
+  document.getElementById('uptime-val').textContent =
+    (hh ? hh + 'h ' : '') + (mn % 60) + 'm ' + (s % 60) + 's';
+}
+tick();
+setInterval(tick, 1000);
+
+// links
+const linksEl = document.getElementById('links');
+CONFIG.links.forEach(cat => {
+  const div = document.createElement('div');
+  const label = document.createElement('div');
+  label.className = 'cat-label';
+  label.textContent = cat.cat;
+  const row = document.createElement('div');
+  row.className = 'link-row';
+  cat.items.forEach(item => {
+    const a = document.createElement('a');
+    a.className = 'link-item';
+    a.href = item.url;
+    const dot = document.createElement('span');
+    dot.className = 'link-dot';
+    dot.style.background = cat.color;
+    a.appendChild(dot);
+    a.appendChild(document.createTextNode(item.label));
+    row.appendChild(a);
+  });
+  div.appendChild(label);
+  div.appendChild(row);
+  linksEl.appendChild(div);
+});
+
+// search
+const defaultEngines = {
+  google: { name: "google", url: "https://www.google.com/search", param: "q" },
+  ddg:    { name: "ddg",    url: "https://duckduckgo.com/",        param: "q" },
+};
+const defEng = CONFIG.bangs['!' + CONFIG.defaultEngine]
+  || defaultEngines[CONFIG.defaultEngine]
+  || defaultEngines.google;
+
+const input = document.getElementById('searchInput');
+const engineLabel = document.getElementById('engineLabel');
+engineLabel.textContent = defEng.name;
+
+input.addEventListener('input', () => {
+  const bang = input.value.trim().split(' ')[0];
+  if (CONFIG.bangs[bang]) {
+    engineLabel.textContent = CONFIG.bangs[bang].name;
+    engineLabel.style.color = 'var(--blue)';
+  } else {
+    engineLabel.textContent = defEng.name;
+    engineLabel.style.color = '';
+  }
+});
+
+document.getElementById('searchForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const val = input.value.trim();
+  const bang = val.split(' ')[0];
+  if (CONFIG.bangs[bang]) {
+    const eng = CONFIG.bangs[bang];
+    const q = val.slice(bang.length).trim() || val;
+    const url = new URL(eng.url);
+    url.searchParams.set(eng.param, q);
+    window.location.href = url.toString();
+  } else {
+    const url = new URL(defEng.url);
+    url.searchParams.set(defEng.param, val);
+    window.location.href = url.toString();
+  }
+});
+</script>
+</body>
+</html>
